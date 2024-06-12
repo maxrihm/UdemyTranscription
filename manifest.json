@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "Text Accumulator and Clipboard Copier",
+  "description": "Accumulates text from specific elements and copies it to the clipboard.",
+  "version": "1.0",
+  "permissions": [
+    "activeTab",
+    "clipboardWrite",
+    "scripting",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://www.udemy.com/course*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.udemy.com/course*"
+      ],
+      "js": [
+        "content.js"
+      ]
+    }
+  ],
+  "commands": {
+    "take_screenshot": {
+      "suggested_key": {
+        "default": "Alt+S"
+      },
+      "description": "Take a screenshot of the video"
+    }
+  }
+}
