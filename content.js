@@ -72,10 +72,10 @@ function updateActiveCue() {
 }
 
 // Run updateActiveCue every 500 milliseconds to keep track of the active transcript cue
-setInterval(updateActiveCue, 500);
+// setInterval(updateActiveCue, 500);
 
 function takeScreenshot() {
-    addScreenshotToLastActiveCue(); // Update to use the last active cue
+    // addScreenshotToLastActiveCue(); // Update to use the last active cue
 
     try {
       var video = document.querySelector('video');
