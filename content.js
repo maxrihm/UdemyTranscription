@@ -10,6 +10,21 @@ setTimeout(function () {
       copyButton.style.marginLeft = '20px';
       header.appendChild(copyButton);
 
+      // Create Reset button
+      const resetButton = document.createElement('button');
+      resetButton.innerText = 'Reset Timecodes';
+      resetButton.style.marginLeft = '10px';
+      header.appendChild(resetButton);
+
+      // Add click event listener to the reset button
+      resetButton.addEventListener('click', () => {
+          console.log('Resetting timecodes...');
+          timecodes = [];
+          currentIndex = 0;
+          isJumpingEnabled = false;
+          setupTimecodes();
+      });
+
       // Add click event listener to the copy text button
       copyButton.addEventListener('click', async () => {
           const elements = document.querySelectorAll('.transcript--cue-container--Vuwj6');
@@ -77,20 +92,17 @@ function setupTimecodes() {
         return;
     }
 
-    if (timecodes.length > 0) {
-        // Already initialized
-        return;
-    }
-
     console.log('Video found! Duration:', totalDuration);
     
     // Generate 10 evenly spaced timecodes
     const step = totalDuration / 10;
+    timecodes = []; // Clear existing timecodes
     for (let i = 1; i <= 10; i++) {
         timecodes.push(i * step);
     }
 
     console.log('Generated timecodes:', timecodes);
+    console.log('Total video duration:', totalDuration);
     isJumpingEnabled = true;
 }
 
