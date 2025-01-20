@@ -33,7 +33,7 @@ setTimeout(function () {
               console.log('Section with class starting "lecture-view--container" not found');
           }
 
-          let combinedText = allSpanText.trim() + "\n" + sectionText;
+          let combinedText = sectionText + "\n" + allSpanText.trim();
 
           try {
               await navigator.clipboard.writeText(combinedText);
