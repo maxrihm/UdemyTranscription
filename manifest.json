@@ -26,11 +26,11 @@
     }
   ],
   "commands": {
-    "take_screenshot": {
+    "jump_timecode": {
       "suggested_key": {
-        "default": "Alt+S"
+        "default": "Alt+J"
       },
-      "description": "Take a screenshot of the video"
+      "description": "Jump to next video timecode"
     }
   }
 }

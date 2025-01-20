@@ -10,20 +10,6 @@ setTimeout(function () {
       copyButton.style.marginLeft = '20px';
       header.appendChild(copyButton);
 
-      // Create a new button for taking a single screenshot
-      const screenshotButton = document.createElement('button');
-      screenshotButton.innerText = 'Take Screenshot';
-      screenshotButton.style.marginLeft = '20px';
-      header.appendChild(screenshotButton);
-      
-      // -----------------------------------------
-      // Create a new button for taking 10 screenshots
-      const screenshotTenButton = document.createElement('button');
-      screenshotTenButton.innerText = 'Take 10 Screenshots';
-      screenshotTenButton.style.marginLeft = '20px';
-      header.appendChild(screenshotTenButton);
-      // -----------------------------------------
-
       // Add click event listener to the copy text button
       copyButton.addEventListener('click', async () => {
           const elements = document.querySelectorAll('.transcript--cue-container--Vuwj6');
@@ -57,134 +43,95 @@ setTimeout(function () {
           }
       });
 
-      // Add click event listener to the single-screenshot button
-      screenshotButton.addEventListener('click', takeScreenshot);
-
-      // -----------------------------------------
-      // Add click event listener to the 10-screenshot button
-      screenshotTenButton.addEventListener('click', takeTenScreenshots);
-      // -----------------------------------------
+      // Initialize timecode jumping after header is found
+      initializeTimecodeJumping();
   } else {
       console.log("Header not found. Can't append the button.");
   }
 }, 7500); // Wait for 7.5 seconds to account for dynamically loaded content
 
-chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
-  if (message.action === "take_screenshot") {
-    takeScreenshot();
-  }
-});
+let timecodes = [];
+let currentIndex = 0;
+let isJumpingEnabled = false;
 
-let lastActiveCue = null;
-
-function updateActiveCue() {
-  const activeCue = document.querySelector('p[data-purpose="transcript-cue-active"]');
-  if (activeCue) {
-    lastActiveCue = activeCue;
-  }
+function initializeTimecodeJumping() {
+    console.log('Initializing timecode jumping...');
+    
+    // Try to initialize immediately
+    setupTimecodes();
+    
+    // Also set up a periodic check in case video loads later
+    setInterval(setupTimecodes, 2000);
 }
 
-// OPTIONAL: Run updateActiveCue every 500 milliseconds to keep track of the active transcript cue
-// setInterval(updateActiveCue, 500);
-
-function takeScreenshot() {
-  try {
-    var video = document.querySelector('video');
+function setupTimecodes() {
+    const video = document.querySelector('video');
     if (!video) {
-      console.error('No video found on this page.');
-      return;
+        console.log('Video element not found yet...');
+        return;
     }
 
-    var canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    const totalDuration = video.duration;
+    if (!totalDuration || totalDuration === Infinity) {
+        console.log('Video duration not available yet:', totalDuration);
+        return;
+    }
 
-    var context = canvas.getContext('2d');
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    if (timecodes.length > 0) {
+        // Already initialized
+        return;
+    }
 
-    canvas.toBlob(function (blob) {
-      var url = URL.createObjectURL(blob);
-      var link = document.createElement('a');
-      link.href = url;
+    console.log('Video found! Duration:', totalDuration);
+    
+    // Generate 10 evenly spaced timecodes
+    const step = totalDuration / 10;
+    for (let i = 1; i <= 10; i++) {
+        timecodes.push(i * step);
+    }
 
-      var date = new Date();
-      var fileName = 'screenshot_' + date.toISOString().replace(/[:.]/g, '-') + '.png';
-      link.download = fileName;
-      link.click();
-      URL.revokeObjectURL(url);
-    }, 'image/png');
-  } catch (error) {
-    console.error('Error capturing screenshot:', error);
-  }
+    console.log('Generated timecodes:', timecodes);
+    isJumpingEnabled = true;
 }
 
-// -----------------------------------------
-// NEW FUNCTION: Take 10 screenshots
-function takeTenScreenshots() {
-  const video = document.querySelector('video');
-  if (!video) {
-    console.error("No video found on this page.");
-    return;
-  }
+// Function to jump to next timecode
+function jumpToNextTimecode() {
+    console.log('Jump attempt triggered');
+    
+    if (!isJumpingEnabled) {
+        console.log('Jumping not enabled yet - waiting for video to load');
+        return;
+    }
 
-  const totalDuration = video.duration;
-  if (!totalDuration || totalDuration === Infinity) {
-    console.error("Video duration not available or invalid.");
-    return;
-  }
+    const video = document.querySelector('video');
+    if (!video) {
+        console.log('Video element not found during jump');
+        return;
+    }
 
-  // We want 10 evenly spaced timecodes (skipping 0, but including end).
-  // For simplicity, let's define a step that goes from 10% to 100% of the video in 10 steps.
-  // step = totalDuration / 10 => timecodes = 1*step, 2*step, ... , 10*step
-  // 10*step will be totalDuration.
-  const step = totalDuration / 10;
-  const timecodes = [];
-  for (let i = 1; i <= 10; i++) {
-    timecodes.push(i * step);
-  }
-
-  let currentIndex = 0;
-
-  // We will do this sequentially: seek to a timecode, wait for the "seeked" event, take a screenshot, then move on.
-  function seekAndCapture() {
     if (currentIndex >= timecodes.length) {
-      console.log("All 10 screenshots captured.");
-      return;
+        console.log('Resetting to beginning of timecodes');
+        currentIndex = 0;
+        return;
     }
 
-    // Move video to the next timecode
     const targetTime = timecodes[currentIndex];
+    console.log(`Jumping to timecode ${currentIndex + 1}/10:`, targetTime);
     video.currentTime = targetTime;
-
-    // Once the video has seeked, take a screenshot
-    video.addEventListener('seeked', onSeeked);
-  }
-
-  function onSeeked() {
-    // Remove the event listener or we'll capture multiple times
-    video.removeEventListener('seeked', onSeeked);
-
-    // Now take a screenshot
-    takeScreenshot();
-
-    // Move on to the next timecode after a short delay (to let the video frame update properly)
     currentIndex++;
-    setTimeout(seekAndCapture, 500);
-  }
 
-  // Start the process
-  seekAndCapture();
+    // Wait for 1 second before allowing next jump
+    isJumpingEnabled = false;
+    setTimeout(() => {
+        isJumpingEnabled = true;
+        console.log('Ready for next jump');
+    }, 1000);
 }
-// -----------------------------------------
 
-function addScreenshotToLastActiveCue() {
-  // Use the last known active cue
-  if (lastActiveCue) {
-    var cueText = lastActiveCue.querySelector('span[data-purpose="cue-text"]');
-    if (cueText) {
-      cueText.textContent = '[Screenshot] ' + cueText.textContent;
+// Listen for messages from the background script
+chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
+    if (message.command === "jump_timecode") {
+        console.log('Jump command received from Chrome');
+        jumpToNextTimecode();
     }
-  } else {
-    console.error("No active cue available for prefixing.");
-  }
-}
+});
