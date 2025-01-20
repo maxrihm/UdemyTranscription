@@ -17,13 +17,7 @@ setTimeout(function () {
       header.appendChild(resetButton);
 
       // Add click event listener to the reset button
-      resetButton.addEventListener('click', () => {
-          console.log('Resetting timecodes...');
-          timecodes = [];
-          currentIndex = 0;
-          isJumpingEnabled = false;
-          setupTimecodes();
-      });
+      resetButton.addEventListener('click', resetTimecodes);
 
       // Add click event listener to the copy text button
       copyButton.addEventListener('click', async () => {
@@ -69,41 +63,33 @@ let timecodes = [];
 let currentIndex = 0;
 let isJumpingEnabled = false;
 
-function initializeTimecodeJumping() {
-    console.log('Initializing timecode jumping...');
+function resetTimecodes() {
+    console.log('Resetting timecodes...');
+    timecodes = [];
+    currentIndex = 0;
+    isJumpingEnabled = false;
     
-    // Try to initialize immediately
-    setupTimecodes();
-    
-    // Also set up a periodic check in case video loads later
-    setInterval(setupTimecodes, 2000);
-}
-
-function setupTimecodes() {
     const video = document.querySelector('video');
-    if (!video) {
-        console.log('Video element not found yet...');
+    if (!video || !video.duration || video.duration === Infinity) {
+        console.log('Video not ready yet');
         return;
     }
 
     const totalDuration = video.duration;
-    if (!totalDuration || totalDuration === Infinity) {
-        console.log('Video duration not available yet:', totalDuration);
-        return;
-    }
-
-    console.log('Video found! Duration:', totalDuration);
-    
-    // Generate 10 evenly spaced timecodes
     const step = totalDuration / 10;
-    timecodes = []; // Clear existing timecodes
+    
     for (let i = 1; i <= 10; i++) {
         timecodes.push(i * step);
     }
 
-    console.log('Generated timecodes:', timecodes);
+    console.log('Generated new timecodes:', timecodes);
     console.log('Total video duration:', totalDuration);
     isJumpingEnabled = true;
+}
+
+function initializeTimecodeJumping() {
+    console.log('Initializing timecode jumping...');
+    resetTimecodes();
 }
 
 // Function to jump to next timecode
@@ -145,5 +131,8 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
     if (message.command === "jump_timecode") {
         console.log('Jump command received from Chrome');
         jumpToNextTimecode();
+    } else if (message.command === "reset_timecodes") {
+        console.log('Reset command received from Chrome');
+        resetTimecodes();
     }
 });

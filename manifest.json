@@ -31,6 +31,12 @@
         "default": "Alt+J"
       },
       "description": "Jump to next video timecode"
+    },
+    "reset_timecodes": {
+      "suggested_key": {
+        "default": "Alt+R"
+      },
+      "description": "Reset video timecodes"
     }
   }
 }
